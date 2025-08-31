@@ -1,0 +1,42 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Python (if ingestion scripts are Python)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# Node/JS (if future front-end or npm usage)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Docker
+*.pid
+*.seed
+*.log
+docker-compose.override.yml
+.docker/
+.dockerignore
+
+# Database & data
+data/
+*.csv
+*.sql
+*.dump
+
+# VSCode/IDE
+.vscode/
+.idea/
+
+# System files
+*.swp
+*~
