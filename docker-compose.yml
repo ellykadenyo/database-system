@@ -1,12 +1,10 @@
-services:
 
-  # -----------------------------
-  # Citus Coordinator (entrypoint)
-  # -----------------------------
+
+services:
   citus_coordinator:
     env_file:
       - .env
-    image: "${CITUS_IMAGE}"
+    image: "citusdata/citus:12.1.0"
     container_name: citus_coordinator
     hostname: citus-coordinator
     ports:
@@ -15,7 +13,6 @@ services:
       POSTGRES_USER: "${POSTGRES_USER}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_DB: "${POSTGRES_DB}"
-      # used by coordinator init script
       WORKER1_HOST: citus_worker1
       WORKER1_PORT: 5432
       WORKER2_HOST: citus_worker2
@@ -42,13 +39,10 @@ services:
     networks:
       - backend
 
-  # -----------------------------
-  # Citus Workers
-  # -----------------------------
   citus_worker1:
     env_file:
       - .env
-    image: "${CITUS_IMAGE}"
+    image: "citusdata/citus:12.1.0"
     container_name: citus_worker1
     hostname: citus-worker1
     environment:
@@ -66,7 +60,7 @@ services:
   citus_worker2:
     env_file:
       - .env
-    image: "${CITUS_IMAGE}"
+    image: "citusdata/citus:12.1.0"
     container_name: citus_worker2
     hostname: citus-worker2
     environment:
@@ -83,7 +77,7 @@ services:
   citus_worker3:
     env_file:
       - .env
-    image: "${CITUS_IMAGE}"
+    image: "citusdata/citus:12.1.0"
     container_name: citus_worker3
     hostname: citus-worker3
     environment:
@@ -98,33 +92,44 @@ services:
       - backend
 
   # -----------------------------
-  # pgPool-II - connection pooling and failover
+  # pgPool-II - connection pooling and failover (Bitnami)
   # -----------------------------
   pgpool:
     env_file:
       - .env
-    image: bitnami/pgpool:latest
+    image: "bitnami/pgpool:latest"
     container_name: pgpool
     environment:
-      PGPOOL_BACKEND_NODES: "citus_coordinator:5432"
-      PGPOOL_SR_CHECK_PERIOD: "10"
-      PGPOOL_HEALTH_CHECK_USER: "${PGPOOL_DB_USER}"
-      PGPOOL_HEALTH_CHECK_PASSWORD: "${PGPOOL_DB_PASSWORD}"
-      PGPOOL_POSTGRES_USERNAME: "${PGPOOL_DB_USER}"
-      PGPOOL_POSTGRES_PASSWORD: "${PGPOOL_DB_PASSWORD}"
-      # pool config snippets are read from mounted config if necessary
+      # Backend nodes format: "0:host:port,1:host2:port,2:host3:port"
+      # This points pgpool at coordinator + all workers (use service names on the same compose network)
+      PGPOOL_BACKEND_NODES: "0:citus_coordinator:5432,1:citus_worker1:5432,2:citus_worker2:5432,3:citus_worker3:5432"
+
+      # Database credentials used by pgpool to connect to backends (these should exist and be valid)
+      PGPOOL_POSTGRES_USERNAME: "${POSTGRES_USER}"
+      PGPOOL_POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+
+      # Pgpool admin user (required by Bitnami image)
+      PGPOOL_ADMIN_USERNAME: "${PGPOOL_ADMIN_USERNAME}"
+      PGPOOL_ADMIN_PASSWORD: "${PGPOOL_ADMIN_PASSWORD}"
+
+      # Streaming-replication health check user (required)
+      PGPOOL_SR_CHECK_USER: "${PGPOOL_SR_CHECK_USER}"
+      PGPOOL_SR_CHECK_PASSWORD: "${PGPOOL_SR_CHECK_PASSWORD}"
+
+      # Optional: other pgpool env vars (timeouts, pool size) can be added here
     ports:
       - "${PGPOOL_PORT}:5432"
     volumes:
       - ./db/pgpool:/opt/bitnami/pgpool/conf
     depends_on:
       - citus_coordinator
+      - citus_worker1
+      - citus_worker2
+      - citus_worker3
     networks:
       - backend
 
-  # -----------------------------
-  # postgres_exporter (Prometheus exporter for Postgres)
-  # -----------------------------
+  # rest of services unchanged...
   postgres_exporter:
     env_file:
       - .env
@@ -139,9 +144,6 @@ services:
     networks:
       - backend
 
-  # -----------------------------
-  # Prometheus
-  # -----------------------------
   prometheus:
     env_file:
       - .env
@@ -158,9 +160,6 @@ services:
     networks:
       - backend
 
-  # -----------------------------
-  # Grafana
-  # -----------------------------
   grafana:
     env_file:
       - .env
@@ -180,9 +179,6 @@ services:
     networks:
       - backend
 
-  # -----------------------------
-  # Metabase
-  # -----------------------------
   metabase:
     env_file:
       - .env
@@ -195,7 +191,6 @@ services:
       MB_DB_USER: "${METABASE_DB_USER}"
       MB_DB_PASS: "${METABASE_DB_PASSWORD}"
       MB_DB_HOST: "citus_coordinator"
-      # initial admin credentials used by ingest script to programmatically create dashboards
       MB_SETUP_ADMIN_EMAIL: "${METABASE_ADMIN_EMAIL}"
       MB_SETUP_ADMIN_PASSWORD: "${METABASE_ADMIN_PASSWORD}"
     ports:
@@ -205,9 +200,6 @@ services:
     networks:
       - backend
 
-  # -----------------------------
-  # dataloader service (runs on-demand; here provided for convenience)
-  # -----------------------------
   dataloader:
     env_file:
       - .env
