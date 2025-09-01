@@ -17,6 +17,40 @@ The project includes the following components:
 - **CSV Ingestion Service**: A lightweight process/container to read CSV files and load them into PostgreSQL tables for querying.
 - **Docker Compose**: Used to define and run the multi-container application.
 
+The directory structure of the project repository is as follows:
+```
+project-repo/
+├── docker-compose.yml          # Main orchestrator (all services)
+├── .env                        # Centralized environment variables & secrets
+├── README.md                   # Documentation
+│
+├── db/                         # PostgreSQL cluster & backups
+│   ├── init/                   # Initialization SQL scripts
+│   │   └── create_users.sql
+│   ├── backups/                # Auto backup scripts/output
+│   └── Dockerfile              # (optional) custom Postgres image if needed
+│
+├── monitoring/                 # Monitoring stack
+│   ├── prometheus.yml          # Prometheus scrape configs
+│   ├── grafana/
+│   │   ├── dashboards/         # JSON dashboard definitions
+│   │   └── provisioning/       # Auto-provisioning configs for Grafana
+│   └── exporters/              # e.g. postgres_exporter configs
+│
+├── analytics/                  # BI / visualization layer
+│   └── metabase/
+│       └── Dockerfile          # (optional) if customization needed
+│
+├── security/                   # TLS/SSL, RBAC configs
+│   ├── certs/                  # Certificates for TLS
+│   └── rbac/                   # Role-based access control policies
+│
+└── scripts/                    # Utility scripts
+    ├── install-docker.sh       # Automated Docker + Compose install
+    ├── backup.sh               # Manual/cron backup script
+    └── restore.sh              # Restore from backups
+```
+
 ---
 
 ## 3. Installations
@@ -31,7 +65,7 @@ The script:
 #### Usage
 On an Ubuntu machine (e.g., AWS EC2):
 ```bash
-wget https://raw.githubusercontent.com/your-repo/install-docker.sh
+wget https://raw.githubusercontent.com/ellykadenyo/database-system/main/scripts/install-docker.sh
 bash install-docker.sh
 newgrp docker
 docker run hello-world
@@ -46,8 +80,8 @@ Deployments are defined in `docker-compose.yaml` files (to be provided in the pr
 
 To deploy the stack:
 ```bash
-git clone https://github.com/your-repo/postgres-analytics-demo.git
-cd postgres-analytics-demo
+git clone https://github.com/ellykadenyo/database-system.git
+cd database-system
 docker compose up -d
 ```
 
@@ -69,11 +103,64 @@ docker compose down
 
 ---
 
-## 5. System Usage
-- Connect to PostgreSQL via pgPool-II endpoint for database queries.  
-- Place CSV files in the `data/` directory (mounted into ingestion container) for automatic ingestion.  
-- Access **Metabase** at `http://<server-public-ip>:3000` to explore and visualize data.  
-- Use Docker commands (`docker ps`, `docker logs`, etc.) to monitor containers.
+## 5. How To
+
+### Quick Start
+
+1. **Copy environment file:**
+   
+   Copy `.env.example` to `.env` and fill in all required values.
+
+2. **Make helper scripts executable:**
+   
+   ```bash
+   chmod +x db/coordinator-init.sh
+   chmod +x scripts/ingest_run.sh
+   chmod +x scripts/ingest_helper.py
+   chmod +x scripts/ingest_and_setup.sh
+   chmod +x scripts/backup.sh
+   chmod +x scripts/restore.sh
+   ```
+
+3. **Start the stack:**
+   
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Tail logs to watch initialization:**
+   
+   ```bash
+   docker compose logs -f
+   # Or specific services
+   docker compose logs -f citus_coordinator pgpool prometheus grafana metabase
+   ```
+
+5. **Ingest data:**
+   
+   After the stack is up, copy CSV files into `./data/` and run:
+   
+   ```bash
+   ./scripts/ingest_and_setup.sh
+   ```
+
+6. **Access services (host port mapping from .env):**
+   
+   - Metabase:   `http://<vm-ip>:${METABASE_PORT}`
+   - Grafana:    `http://<vm-ip>:${GRAFANA_PORT}`
+   - Prometheus: `http://<vm-ip>:${PROMETHEUS_PORT}`
+   - Postgres/Citus coordinator: `postgresql://<vm-ip>:${COORDINATOR_PORT}/tripdata` (use `POSTGRES_USER` and `POSTGRES_PASSWORD`)
+
+7. **Logging tips:**
+   
+   All scripts are verbose and include timestamps. For deep debugging, check the coordinators’ container logs:
+   
+   ```bash
+   docker logs citus_coordinator
+   docker logs citus_worker1
+   docker logs pgpool
+   docker logs postgres_exporter
+   ```
 
 ---
 
