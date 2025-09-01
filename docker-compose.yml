@@ -1,8 +1,5 @@
-version: "3.8"
 
-# All environment variables come from .env (no hardcoded secrets)
-env_file:
-  - .env
+version: "3.8"
 
 services:
 
@@ -10,6 +7,8 @@ services:
   # Citus Coordinator (entrypoint)
   # -----------------------------
   citus_coordinator:
+    env_file:
+      - .env
     image: "${CITUS_IMAGE}"
     container_name: citus_coordinator
     hostname: citus-coordinator
@@ -50,6 +49,8 @@ services:
   # Citus Workers
   # -----------------------------
   citus_worker1:
+    env_file:
+      - .env
     image: "${CITUS_IMAGE}"
     container_name: citus_worker1
     hostname: citus-worker1
@@ -66,6 +67,8 @@ services:
       - backend
 
   citus_worker2:
+    env_file:
+      - .env
     image: "${CITUS_IMAGE}"
     container_name: citus_worker2
     hostname: citus-worker2
@@ -81,6 +84,8 @@ services:
       - backend
 
   citus_worker3:
+    env_file:
+      - .env
     image: "${CITUS_IMAGE}"
     container_name: citus_worker3
     hostname: citus-worker3
@@ -99,6 +104,8 @@ services:
   # pgPool-II - connection pooling and failover
   # -----------------------------
   pgpool:
+    env_file:
+      - .env
     image: bitnami/pgpool:5.4.0-debian-11-r0
     container_name: pgpool
     environment:
@@ -122,6 +129,8 @@ services:
   # postgres_exporter (Prometheus exporter for Postgres)
   # -----------------------------
   postgres_exporter:
+    env_file:
+      - .env
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres_exporter
     environment:
@@ -137,6 +146,8 @@ services:
   # Prometheus
   # -----------------------------
   prometheus:
+    env_file:
+      - .env
     image: prom/prometheus:latest
     container_name: prometheus
     volumes:
@@ -154,6 +165,8 @@ services:
   # Grafana
   # -----------------------------
   grafana:
+    env_file:
+      - .env
     image: grafana/grafana:9.5.2
     container_name: grafana
     environment:
@@ -174,6 +187,8 @@ services:
   # Metabase
   # -----------------------------
   metabase:
+    env_file:
+      - .env
     image: metabase/metabase:latest
     container_name: metabase
     environment:
@@ -197,6 +212,8 @@ services:
   # dataloader service (runs on-demand; here provided for convenience)
   # -----------------------------
   dataloader:
+    env_file:
+      - .env
     image: python:3.11-slim
     container_name: dataloader
     working_dir: /app
