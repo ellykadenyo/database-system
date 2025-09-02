@@ -28,20 +28,48 @@ services:
     volumes:
       - citus_coordinator_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
-      - ./db/coordinator-init.sh:/usr/local/bin/coordinator-init.sh:ro
-    command: ["bash", "-lc", "/usr/local/bin/coordinator-init.sh"]
     depends_on:
       - citus_worker1
       - citus_worker2
       - citus_worker3
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     networks:
       - backend
-
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Init container (runs once, uses Postgres 17 client tools)
+  citus_coordinator_init:
+    image: postgres:17
+    container_name: citus_coordinator_init
+    env_file:
+      - .env
+    depends_on:
+      citus_coordinator:
+        condition: service_healthy
+    entrypoint: >
+      bash -c "
+      until pg_isready -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB}; do
+        echo 'Waiting for coordinator...';
+        sleep 2;
+      done;
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"
+        SELECT * FROM citus_add_node('citus_worker1', 5432);
+        SELECT * FROM citus_add_node('citus_worker2', 5432);
+        SELECT * FROM citus_add_node('citus_worker3', 5432);
+      \";
+      "
+    environment:
+      PGPASSWORD: "${POSTGRES_PASSWORD}"
+    networks:
+      - backend
 
   citus_worker1:
     env_file:
@@ -103,23 +131,13 @@ services:
     image: "bitnami/pgpool:latest"
     container_name: pgpool
     environment:
-      # Backend nodes format: "0:host:port,1:host2:port,2:host3:port"
-      # This points pgpool at coordinator + all workers (use service names on the same compose network)
       PGPOOL_BACKEND_NODES: "0:citus_coordinator:5432,1:citus_worker1:5432,2:citus_worker2:5432,3:citus_worker3:5432"
-
-      # Database credentials used by pgpool to connect to backends (these should exist and be valid)
       PGPOOL_POSTGRES_USERNAME: "${POSTGRES_USER}"
       PGPOOL_POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-
-      # Pgpool admin user (required by Bitnami image)
       PGPOOL_ADMIN_USERNAME: "${PGPOOL_ADMIN_USERNAME}"
       PGPOOL_ADMIN_PASSWORD: "${PGPOOL_ADMIN_PASSWORD}"
-
-      # Streaming-replication health check user (required)
       PGPOOL_SR_CHECK_USER: "${PGPOOL_SR_CHECK_USER}"
       PGPOOL_SR_CHECK_PASSWORD: "${PGPOOL_SR_CHECK_PASSWORD}"
-
-      # Optional: other pgpool env vars (timeouts, pool size) can be added here
     ports:
       - "${PGPOOL_PORT}:5432"
     volumes:

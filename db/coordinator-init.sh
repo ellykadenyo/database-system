@@ -43,9 +43,16 @@ wait_for_port() {
   return 1
 }
 
+# Log connection details
+LOG "Postgres connection details:"
+LOG "  PGHOST=$PGHOST"
+LOG "  PGPORT=$PGPORT"
+LOG "  PGUSER=$PGUSER"
+LOG "  PGPASSWORD=$PGPASSWORD"
+
 # Wait for coordinator Postgres to be up
 LOG "Waiting for local Postgres (coordinator) to accept connections..."
-POSTGRES_WAIT_TIMEOUT=240
+POSTGRES_WAIT_TIMEOUT=120
 for i in $(seq 1 $POSTGRES_WAIT_TIMEOUT); do
   if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" >/dev/null 2>&1; then
     LOG "Coordinator Postgres is up"
