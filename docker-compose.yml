@@ -27,7 +27,6 @@ services:
       PGPOOL_DB_PASSWORD: "${PGPOOL_DB_PASSWORD}"
     volumes:
       - citus_coordinator_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro
     depends_on:
       - citus_worker1
       - citus_worker2
@@ -54,32 +53,37 @@ services:
     depends_on:
       citus_coordinator:
         condition: service_healthy
+      citus_worker1:
+        condition: service_healthy
+      citus_worker2:
+        condition: service_healthy
+      citus_worker3:
+        condition: service_healthy
     entrypoint: >
       bash -c "
-      # Wait for coordinator to be ready
+      echo 'Waiting for coordinator...';
       until pg_isready -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB}; do
-        echo 'Waiting for coordinator...';
         sleep 2;
       done;
 
-      # Create citus extension on coordinator
-      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c 'CREATE EXTENSION IF NOT EXISTS citus;';
+      echo 'Creating Citus extension on coordinator...';
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"CREATE EXTENSION IF NOT EXISTS citus;\";
 
-      # Create citus extension on each worker
-      for worker in citus_worker1 citus_worker2 citus_worker3; do
-        until pg_isready -h $worker -U ${POSTGRES_USER} -d ${POSTGRES_DB}; do
-          echo "Waiting for $worker...";
-          sleep 2;
-        done;
-        psql -h $worker -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c 'CREATE EXTENSION IF NOT EXISTS citus;';
-      done;
+      echo 'Ensuring Citus extension on worker1...';
+      psql -h citus_worker1 -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"CREATE EXTENSION IF NOT EXISTS citus;\";
+      echo 'Ensuring Citus extension on worker2...';
+      psql -h citus_worker2 -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"CREATE EXTENSION IF NOT EXISTS citus;\";
+      echo 'Ensuring Citus extension on worker3...';
+      psql -h citus_worker3 -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"CREATE EXTENSION IF NOT EXISTS citus;\";
 
-      # Add workers to coordinator
-      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "
+      echo 'Registering workers with coordinator...';
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} <<'EOSQL'
         SELECT master_add_node('citus_worker1', 5432);
         SELECT master_add_node('citus_worker2', 5432);
         SELECT master_add_node('citus_worker3', 5432);
-      ";
+      EOSQL
+
+      echo 'Citus cluster initialization complete.'
       "
     environment:
       PGPASSWORD: "${POSTGRES_PASSWORD}"
