@@ -59,6 +59,8 @@ services:
         condition: service_healthy
       citus_worker3:
         condition: service_healthy
+    volumes:
+    - ./db/init:/db/init:ro
     entrypoint: >
       bash -c "
       echo 'Waiting for coordinator...';
@@ -82,17 +84,21 @@ services:
         SELECT master_add_node('citus_worker2', 5432);
         SELECT master_add_node('citus_worker3', 5432);
       EOSQL
-      echo '[init] applying SQL from db/init (with env substitution)...';
+      echo '[init] applying SQL from /db/init (with env substitution)...';
         shopt -s nullglob
-        files=(db/init/*.sql)
+        files=(/db/init/*.sql)
         if [ ${#files[@]} -eq 0 ]; then
-          echo '[init] no SQL files found in /init-sql, skipping.';
+          echo '[init] no SQL files found in /db/init/, skipping.';
         else
-          for f in $(ls -1 /init-sql/*.sql | sort); do
+          for f in $(ls -1 /db/init/*.sql | sort); do
             echo \"[init] running $f\";
             envsubst < \"$f\" | PGPASSWORD=${POSTGRES_PASSWORD} psql -v ON_ERROR_STOP=1 -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB};
           done
         fi
+      echo 'Creating distributed table yellow_tripdata using tpep_pickup_datetime as shard key...';
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"
+        SELECT create_distributed_table('yellow_tripdata', 'tpep_pickup_datetime');
+      \";
       echo 'Citus cluster initialization complete.'
       "
     environment:
@@ -263,27 +269,38 @@ services:
       - backend
 
   dataloader:
+    image: postgres:17
+    container_name: dataloader
     env_file:
       - .env
-    image: python:3.11-slim
-    container_name: dataloader
-    working_dir: /app
-    volumes:
-      - ./data:/data:ro
-      - ./scripts/ingest_helper.py:/app/ingest_helper.py:ro
-      - ./scripts/ingest_run.sh:/app/ingest_run.sh:ro
-    entrypoint: ["/bin/bash","/app/ingest_run.sh"]
-    environment:
-      DATALOADER_DB_USER: "${DATALOADER_DB_USER}"
-      DATALOADER_DB_PASSWORD: "${DATALOADER_DB_PASSWORD}"
-      DATALOADER_DB_HOST: "citus_coordinator"
-      DATALOADER_DB_PORT: "5432"
-      DATALOADER_DB_NAME: "${POSTGRES_DB}"
     depends_on:
       citus_coordinator:
         condition: service_healthy
       citus_coordinator_init:
         condition: service_completed_successfully
+    entrypoint: >
+      bash -c "
+      set -e
+      until pg_isready -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB}; do
+        echo 'Waiting for coordinator...';
+        sleep 2;
+      done;
+
+      echo 'Downloading NYC Taxi dataset...';
+      curl -L -o /tmp/nyc-yellow-taxi-trip-data.zip https://www.kaggle.com/api/v1/datasets/download/elemento/nyc-yellow-taxi-trip-data;
+      unzip -o /tmp/nyc-yellow-taxi-trip-data.zip -d /tmp/nyc_data;
+
+      for file in /tmp/nyc_data/*.csv; do
+        echo \"Loading $file...\";
+        psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \
+          \"\\COPY yellow_tripdata FROM STDIN WITH CSV HEADER\" < $file;
+      done;
+
+      echo '✅ Data load complete.';
+      "
+    environment:
+      PGPASSWORD: "${POSTGRES_PASSWORD}"
+    restart: "no"
     networks:
       - backend
 
