@@ -79,11 +79,10 @@ services:
       psql -h citus_worker3 -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"CREATE EXTENSION IF NOT EXISTS citus;\";
 
       echo 'Registering workers with coordinator...';
-      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} <<'EOSQL'
-        SELECT master_add_node('citus_worker1', 5432);
-        SELECT master_add_node('citus_worker2', 5432);
-        SELECT master_add_node('citus_worker3', 5432);
-      EOSQL
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"SELECT master_add_node('citus_worker1', 5432);\"; 
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"SELECT master_add_node('citus_worker2', 5432);\"; 
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c \"SELECT master_add_node('citus_worker3', 5432);\"; 
+
       echo '[init] applying SQL from /db/init (with env substitution)...';
         shopt -s nullglob
         files=(/db/init/*.sql)

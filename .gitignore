@@ -30,7 +30,7 @@ docker-compose.override.yml
 # Database & data
 data/
 *.csv
-*.sql
+#*.sql
 *.dump
 
 # VSCode/IDE
