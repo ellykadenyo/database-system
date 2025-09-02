@@ -1,10 +1,8 @@
-
-
 services:
   citus_coordinator:
     env_file:
       - .env
-    image: "citusdata/citus:12.1.0"
+    image: citusdata/citus:13.0.1
     container_name: citus_coordinator
     hostname: citus-coordinator
     ports:
@@ -31,7 +29,7 @@ services:
       - citus_coordinator_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
       - ./db/coordinator-init.sh:/usr/local/bin/coordinator-init.sh:ro
-    command: ["bash","-lc","/usr/local/bin/coordinator-init.sh"]
+    command: ["bash", "-lc", "/usr/local/bin/coordinator-init.sh"]
     depends_on:
       - citus_worker1
       - citus_worker2
@@ -42,7 +40,7 @@ services:
   citus_worker1:
     env_file:
       - .env
-    image: "citusdata/citus:12.1.0"
+    image: citusdata/citus:13.0.1
     container_name: citus_worker1
     hostname: citus-worker1
     environment:
@@ -60,7 +58,7 @@ services:
   citus_worker2:
     env_file:
       - .env
-    image: "citusdata/citus:12.1.0"
+    image: citusdata/citus:13.0.1
     container_name: citus_worker2
     hostname: citus-worker2
     environment:
@@ -77,7 +75,7 @@ services:
   citus_worker3:
     env_file:
       - .env
-    image: "citusdata/citus:12.1.0"
+    image: citusdata/citus:13.0.1
     container_name: citus_worker3
     hostname: citus-worker3
     environment:

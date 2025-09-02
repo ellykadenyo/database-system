@@ -16,7 +16,7 @@ OUT_FILE="/tmp/backup_${TIMESTAMP}.sql.gz"
 LOG "Running pg_dump via docker run..."
 docker run --rm \
   -e PGPASSWORD="${POSTGRES_PASSWORD}" \
-  postgres:15 \
+  postgres:17 \
   bash -c "pg_dump -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} | gzip -c" > "${OUT_FILE}"
 
 LOG "Uploading ${OUT_FILE} to s3://${S3_BUCKET}/backups/"
