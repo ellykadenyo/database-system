@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS public.yellow_tripdata (
   tip_amount numeric(10,2),
   tolls_amount numeric(10,2),
   improvement_surcharge numeric(10,2),
-  total_amount numeric(12,2),
+  total_amount numeric(12,2)
 );
 
 -- Distribute table across workers on pickup_day
@@ -46,3 +46,6 @@ GRANT USAGE ON SCHEMA public TO ${PROM_EXPORTER_DB_USER};
 
 -- PGPOOL only needs connection
 GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${PGPOOL_DB_USER};
+
+--Metabase DB
+CREATE DATABASE ${METABASE_DB} OWNER ${METABASE_DB_USER};

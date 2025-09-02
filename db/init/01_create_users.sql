@@ -2,9 +2,6 @@
 -- Run on coordinator during initial database init
 -- Uses environment variable substitution via envsubst in coordinator-init.sh
 
--- Create the Postgres superuser (owner of DB)
-CREATE ROLE ${POSTGRES_USER} WITH LOGIN SUPERUSER PASSWORD '${POSTGRES_PASSWORD}';
-
 -- Application users with limited privileges
 CREATE ROLE ${METABASE_DB_USER} WITH LOGIN PASSWORD '${METABASE_DB_PASSWORD}';
 CREATE ROLE ${PROM_EXPORTER_DB_USER} WITH LOGIN PASSWORD '${PROM_EXPORTER_DB_PASSWORD}';
@@ -17,12 +14,6 @@ CREATE ROLE ${PGPOOL_SR_CHECK_USER} WITH LOGIN REPLICATION PASSWORD '${PGPOOL_SR
 
 -- Create pgpool admin user in DB (pgpool uses this for admin UI/auth)
 CREATE ROLE ${PGPOOL_ADMIN_USERNAME} WITH LOGIN PASSWORD '${PGPOOL_ADMIN_PASSWORD}';
-
--- Create the database we will use for analytics and make owner the superuser
-CREATE DATABASE ${POSTGRES_DB} OWNER ${POSTGRES_USER};
-
--- Connect to the database to create schema and grants
-\connect ${POSTGRES_DB}
 
 -- Grant connection and usage to app users
 GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${METABASE_DB_USER}, ${PROM_EXPORTER_DB_USER}, ${DATALOADER_DB_USER}, ${PGPOOL_DB_USER};
