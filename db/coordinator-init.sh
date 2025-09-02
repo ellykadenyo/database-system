@@ -9,19 +9,23 @@
 #  - Create schema and distributed table
 #
 # This script is intentionally verbose with timestamps and logging to aid troubleshooting.
-#Make sure it is executable # chmod +x db/coordinator-init.sh
+# Make sure it is executable: chmod +x db/coordinator-init.sh
 
 set -euo pipefail
 
 LOG() { echo "$(date -u +'%Y-%m-%dT%H:%M:%SZ') [coordinator-init] $*"; }
 
+# Validate required env vars (fail early instead of defaulting silently)
+: "${POSTGRES_USER:?POSTGRES_USER must be set}"
+: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}"
+: "${POSTGRES_DB:?POSTGRES_DB must be set}"
+
 # Paths
 INIT_SQL_DIR="/docker-entrypoint-initdb.d"
-# The postgres image stores PGDATA in $PGDATA - default path; we rely on docker-entrypoint to initialize DB.
 PGHOST=localhost
 PGPORT=5432
-PGUSER="${POSTGRES_USER:-postgres}"
-PGPASSWORD="${POSTGRES_PASSWORD:-postgres}"
+PGUSER="${POSTGRES_USER}"
+PGPASSWORD="${POSTGRES_PASSWORD}"
 export PGPASSWORD
 
 # Helper to wait for a TCP service
@@ -42,7 +46,6 @@ wait_for_port() {
 # Wait for coordinator Postgres to be up
 LOG "Waiting for local Postgres (coordinator) to accept connections..."
 POSTGRES_WAIT_TIMEOUT=240
-# use psql in a loop
 for i in $(seq 1 $POSTGRES_WAIT_TIMEOUT); do
   if pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" >/dev/null 2>&1; then
     LOG "Coordinator Postgres is up"
@@ -65,26 +68,23 @@ wait_for_port "${WORKER3_HOST}" "${WORKER3_PORT}" 120
 run_sql_template() {
   local template_file=$1
   LOG "Applying SQL from template: ${template_file}"
-  # perform envsubst for placeholders like ${VAR}
   envsubst < "${template_file}" | psql -v ON_ERROR_STOP=1 -U "${PGUSER}" -d "postgres"
 }
 
-# Create users & initial DB objects (run on the postgres 'postgres' DB first)
+# Create users & initial DB objects
 if [ -f "${INIT_SQL_DIR}/create_users.sql" ]; then
   LOG "Creating users and database..."
-  # We run against 'postgres' DB so creation of database succeeds
   envsubst < "${INIT_SQL_DIR}/create_users.sql" | psql -v ON_ERROR_STOP=1 -U "${PGUSER}" -d "postgres"
   LOG "Users/database creation SQL executed"
 fi
 
-# Now register workers with Citus (must be run on coordinator, after worker nodes are reachable)
+# Register workers with Citus
 LOG "Registering worker nodes with Citus..."
-cat <<'EOF' | psql -v ON_ERROR_STOP=1 -U "${PGUSER}" -d "${POSTGRES_DB}"
-SELECT master_add_node('citus_worker1', 5432);
-SELECT master_add_node('citus_worker2', 5432);
-SELECT master_add_node('citus_worker3', 5432);
+cat <<EOF | psql -v ON_ERROR_STOP=1 -U "${PGUSER}" -d "${POSTGRES_DB}"
+SELECT master_add_node('${WORKER1_HOST}', ${WORKER1_PORT});
+SELECT master_add_node('${WORKER2_HOST}', ${WORKER2_PORT});
+SELECT master_add_node('${WORKER3_HOST}', ${WORKER3_PORT});
 EOF
-
 LOG "Worker registration complete"
 
 # Create schema and prepare distributed table
@@ -94,12 +94,10 @@ if [ -f "${INIT_SQL_DIR}/create_schema.sql" ]; then
   LOG "Schema SQL applied"
 fi
 
-# Now distribute the table using Citus command - must be executed on coordinator
+# Distribute the table using Citus
 LOG "Creating distributed table on coordinator..."
 psql -U "${PGUSER}" -d "${POSTGRES_DB}" -c "SELECT create_distributed_table('yellow_tripdata','pickup_day');"
-
 LOG "Distributed table created (yellow_tripdata)"
 
 LOG "Coordinator initialization completed successfully."
-# Sleep forever to let container run as normal Postgres server (the main image will keep running)
 tail -f /dev/null
