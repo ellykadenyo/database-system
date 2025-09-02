@@ -87,10 +87,10 @@ fi
 
 # Register workers with Citus
 LOG "Registering worker nodes with Citus..."
-cat <<EOF | psql -v ON_ERROR_STOP=1 -U "${PGUSER}" -d "${POSTGRES_DB}"
-SELECT master_add_node('${WORKER1_HOST}', ${WORKER1_PORT});
-SELECT master_add_node('${WORKER2_HOST}', ${WORKER2_PORT});
-SELECT master_add_node('${WORKER3_HOST}', ${WORKER3_PORT});
+cat <<'EOF' | psql -v ON_ERROR_STOP=1 -U "${PGUSER}" -d "${POSTGRES_DB}"
+SELECT master_add_node('citus_worker1', 5432);
+SELECT master_add_node('citus_worker2', 5432);
+SELECT master_add_node('citus_worker3', 5432);
 EOF
 LOG "Worker registration complete"
 
