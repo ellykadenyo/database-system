@@ -229,15 +229,17 @@ services:
       - backend
 
   cadvisor:
-    image: gcr.io/google-containers/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     ports:
       - "8080:8080"
     volumes:
       - /:/rootfs:ro
-      - /var/run:/var/run:ro
+      - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      - /cgroup:/cgroup:ro
+    restart: unless-stopped
     networks:
       - backend
 
@@ -261,7 +263,7 @@ services:
   grafana:
     env_file:
       - .env
-    image: grafana/grafana:9.5.2
+    image: grafana/grafana:latest
     container_name: grafana
     environment:
       GF_SECURITY_ADMIN_USER: "admin"
@@ -271,7 +273,7 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "${GRAFANA_PORT}:3001"
+      - "${GRAFANA_PORT}:3000"
     depends_on:
       - prometheus
     restart: unless-stopped
