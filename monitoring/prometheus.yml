@@ -1,15 +1,20 @@
-# prometheus.yml - minimal, auto-scrapes Postgres exporter and node/cadvisor if added
+# prometheus.yml - full auto-scrape for containers and Postgres
 global:
-  scrape_interval: ${PROM_SCRAPE_INTERVAL}
-  evaluation_interval: ${PROM_SCRAPE_INTERVAL}
+  scrape_interval: 15s            # scrape every 15 seconds
+  evaluation_interval: 15s        # evaluate rules every 15 seconds
 
 scrape_configs:
+  # Scrape Postgres metrics via postgres_exporter
   - job_name: 'postgres_exporter'
     static_configs:
       - targets: ['postgres_exporter:9187']
 
+  # Scrape Prometheus internal metrics
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-# Add node_exporter / cadvisor scrape targets if you add them later
+  # Scrape Docker containers via cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']  # Ensure cadvisor container exists in same network
