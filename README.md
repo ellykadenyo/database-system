@@ -1,7 +1,7 @@
-# NYC Taxi Data Analytics Platform
+# Database System Platform for NYC Taxi Data Analytics
 
 ## 1. Introduction
-This repository provides a robust, containerized analytics platform for NYC Yellow Taxi trip data, leveraging a distributed PostgreSQL cluster (Citus), connection pooling (pgPool-II), real-time ingestion, and modern BI/monitoring tools. The system is designed for high-throughput data loading, scalable analytics, and interactive dashboarding, suitable for advanced analytics, prototyping, and educational purposes.
+This repository provides a robust, containerized Database System Platform for NYC Yellow Taxi trip data analytics, leveraging a distributed PostgreSQL cluster (Citus), connection pooling (pgPool-II), real-time ingestion, and modern BI/monitoring tools. The system is designed for high-throughput data loading, scalable analytics, and interactive dashboarding, suitable for advanced analytics, and scalable ready for production deployment.
 
 Key features:
 - Distributed SQL analytics with Citus/PostgreSQL
@@ -160,6 +160,7 @@ Initialization scripts in `db/init/` create all required users, roles, and the m
 - Month-over-month and quarter-over-quarter tips change
 - Taxi density per square kilometer
 - Trips per day
+
 Privileges are set for ingestion, analytics, and monitoring users.
 
 ### Connection Pooling & Load Balancing
