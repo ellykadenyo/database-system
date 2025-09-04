@@ -143,7 +143,7 @@ Copy `.env.example` to `.env` and fill in all required values for ports, databas
    docker compose down
    ```
 
--### ii. Service Endpoints
+### ii. Service Endpoints
 - **Metabase:**   `http://<host-ip>:${METABASE_PORT}`
 - **Grafana:**    `http://<host-ip>:${GRAFANA_PORT}`
 - **Prometheus:** `http://<host-ip>:${PROMETHEUS_PORT}`
