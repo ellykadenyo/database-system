@@ -1,49 +1,80 @@
-# PostgreSQL Analytics Demo with Docker
+# NYC Taxi Data Analytics Platform
 
 ## 1. Introduction
-This project demonstrates a small-scale **data analytics deployment** using Docker.  
-The architecture brings together a **PostgreSQL cluster**, **pgPool-II** for connection pooling and load balancing, and **Metabase** for visualization.  
-Additionally, a **CSV ingestion service** is included to showcase real-time loading of structured data into PostgreSQL for analytics.  
+This repository provides a robust, containerized analytics platform for NYC Yellow Taxi trip data, leveraging a distributed PostgreSQL cluster (Citus), connection pooling (pgPool-II), real-time ingestion, and modern BI/monitoring tools. The system is designed for high-throughput data loading, scalable analytics, and interactive dashboarding, suitable for advanced analytics, prototyping, and educational purposes.
 
-The deployment is intended as a **demo and proof-of-concept**. It is not optimized for production use at very high scale (e.g., >1M inserts/sec). However, it illustrates how modern data analytics stacks can be containerized, orchestrated, and shared reproducibly through Docker Compose.
+Key features:
+- Distributed SQL analytics with Citus/PostgreSQL
+- Automated ingestion of large CSV datasets
+- Materialized views for fast, complex aggregations
+- Connection pooling and load balancing via pgPool-II
+- End-to-end monitoring with Prometheus and Grafana
+- Interactive dashboards with Metabase
+- Fully orchestrated via Docker Compose
+
+This platform is production-grade in architecture, but defaults to demo-scale settings. It can be extended for larger deployments, CI/CD, and security hardening.
 
 ---
 
-## 2. Architecture and Tools
-The project includes the following components:
-- **PostgreSQL Cluster**: A primary database with one or more replicas to support analytics queries.
-- **pgPool-II**: Middleware that provides connection pooling, load balancing (for reads), and failover management.
-- **Metabase**: An open-source BI and analytics platform used for dashboarding and visualization of ingested data.
-- **CSV Ingestion Service**: A lightweight process/container to read CSV files and load them into PostgreSQL tables for querying.
-- **Docker Compose**: Used to define and run the multi-container application.
+## 2. Architecture
+The system consists of the following major components:
+- **Citus/PostgreSQL Cluster**: Distributed SQL database for scalable analytics
+- **pgPool-II**: Connection pooling, load balancing, and failover
+- **Metabase**: BI dashboarding and visualization
+- **Prometheus & Grafana**: Monitoring and metrics
+- **Dataloader**: Automated ingestion of NYC Yellow Taxi trip data
+- **Backup/Restore Scripts**: Data protection and recovery
 
-The directory structure of the project repository is as follows:
+### Architectural Diagram
+
+```mermaid
+graph TD
+   subgraph Data Ingestion
+      A[NYC Taxi CSV Data] -->|Download & Stream| B[Dataloader Container]
+   end
+   B -->|COPY| C[Citus Coordinator]
+   C -->|Distribute| D[Citus Worker 1]
+   C -->|Distribute| E[Citus Worker 2]
+   C -->|Distribute| F[Citus Worker 3]
+   C <-->|Pool/Balance| G[pgPool-II]
+   G <-->|Connect| H[Metabase]
+   G <-->|Connect| I[Prometheus Exporter]
+   I -->|Metrics| J[Prometheus]
+   J -->|Dashboards| K[Grafana]
+   G <-->|Connect| L[Backup/Restore Scripts]
+   C <-->|Init/Schema| M[Init Scripts]
+```
+
+### Directory Structure
 ```
 database-system/
-├── .env                        # Centralized environment variables & secrets
-├── .env.example                # Example environment file
+├── .env                        # Environment variables (copy from .env.example)
+├── .env.example                # Example env file
 ├── .gitignore                  # Git ignore file
 ├── docker-compose.yml          # Main orchestrator (all services)
-├── ingest_yellow_taxi_data.py  # CSV ingestion script
+├── ingest_yellow_taxi_data.py  # Legacy ingestion script (reference)
+├── install-docker.sh           # Automated Docker + Compose install (Ubuntu)
 ├── README.md                   # Documentation
 │
-├── db/                         # PostgreSQL cluster
-│   ├── init/                   # Initialization SQL scripts
+├── db/
+│   ├── init/
 │   │   ├── 01_create_users.sql
 │   │   └── 02_create_schema.sql
-│   └── pgpool/                 # pgPool-II configuration
+│   └── pgpool/
 │       └── pgpool.conf
 │
-├── monitoring/                 # Monitoring stack
-│   ├── prometheus.yml          # Prometheus scrape configs
+├── monitoring/
+│   ├── prometheus.yml
 │   └── grafana/
 │       ├── dashboards/
 │       │   └── postgres_overview.json
 │       └── provisioning/
 │           ├── dashboards/
+│           │   └── dashboard.yml
 │           └── datasources/
+│               └── prometheus.yml
 │
-├── analytics/                  # BI / visualization layer
+├── analytics/
 │   ├── materialized_views/
 │   │   ├── dataloader_mv_execution.sql
 │   │   ├── hourly_average_trip_duration.sql
@@ -58,7 +89,7 @@ database-system/
 │       ├── taxy_density_per_square_km.sql
 │       └── trips_per_day.sql
 │
-├── scripts/                    # Utility scripts
+├── scripts/
 │   ├── backup.sh               # Manual/cron backup script
 │   ├── ingest_helper.py        # Helper for ingestion
 │   ├── ingest_run.sh           # Ingestion runner
@@ -67,122 +98,105 @@ database-system/
 
 ---
 
-## 3. Installations
+## 3. Installations & Prerequisites
+
 ### Docker & Docker Compose
-A helper Bash script (`install-docker.sh`) is provided to set up the latest Docker Engine and Docker Compose plugin on Ubuntu.  
-The script:
-- Adds Docker’s official APT repository.  
-- Installs **docker-ce**, **docker-compose-plugin**, and related utilities.  
-- Configures the current user to join the **docker** group for rootless usage.  
-- Installs useful Linux packages (`git`, `jq`, `unzip`, `make`, etc.).  
+Use `install-docker.sh` to install Docker Engine and Compose plugin on Ubuntu. The script also installs common utilities and configures your user for rootless Docker usage.
 
 #### Usage
-On an Ubuntu machine (e.g., AWS EC2):
 ```bash
-wget https://raw.githubusercontent.com/ellykadenyo/database-system/main/scripts/install-docker.sh
+wget https://raw.githubusercontent.com/ellykadenyo/database-system/main/install-docker.sh
 bash install-docker.sh
 newgrp docker
 docker run hello-world
 ```
+**Note:** For non-Ubuntu systems, follow official Docker documentation.
 
-⚠️ **Note**: This script is designed for Ubuntu. Other Linux distributions will require different installation steps.
-
----
-
-## 4. Deployments
-Deployments are defined in `docker-compose.yaml` files (to be provided in the project).  
-
-To deploy the stack:
-```bash
-git clone https://github.com/ellykadenyo/database-system.git
-cd database-system
-docker compose up -d
-```
-
-The services will include:
-- **Postgres primary + replicas**
-- **pgPool-II middleware**
-- **Metabase dashboard (default port: 3000)**
-- **CSV ingestion container**
-
-Logs can be viewed with:
-```bash
-docker compose logs -f
-```
-
-To stop the stack:
-```bash
-docker compose down
-```
+### Environment Configuration
+Copy `.env.example` to `.env` and fill in all required values for ports, database credentials, and service users. This file is critical for secure and correct operation.
 
 ---
 
-## 5. How To
+## 4. Deployment & Usage
 
 ### Quick Start
-
-1. **Copy environment file:**
-   
-   Copy `.env.example` to `.env` and fill in all required values.
-
-2. **Make helper scripts executable:**
-   
+1. **Clone the repository:**
    ```bash
-   chmod +x db/coordinator-init.sh
-   chmod +x scripts/ingest_run.sh
-   chmod +x scripts/ingest_helper.py
-   chmod +x scripts/ingest_and_setup.sh
-   chmod +x scripts/backup.sh
-   chmod +x scripts/restore.sh
+   git clone https://github.com/ellykadenyo/database-system.git
+   cd database-system
    ```
-
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env to set all required values
+   ```
 3. **Start the stack:**
-   
    ```bash
    docker compose up -d
    ```
-
-4. **Tail logs to watch initialization:**
-   
+4. **Monitor logs:**
    ```bash
    docker compose logs -f
-   # Or specific services
-   docker compose logs -f citus_coordinator pgpool prometheus grafana metabase
    ```
-
-5. **Ingest data:**
-   
-   After the stack is up, copy CSV files into `./data/` and run:
-   
+5. **Stop the stack:**
    ```bash
-   ./scripts/ingest_and_setup.sh
+   docker compose down
    ```
 
-6. **Access services (host port mapping from .env):**
-   
-   - Metabase:   `http://<vm-ip>:${METABASE_PORT}`
-   - Grafana:    `http://<vm-ip>:${GRAFANA_PORT}`
-   - Prometheus: `http://<vm-ip>:${PROMETHEUS_PORT}`
-   - Postgres/Citus coordinator: `postgresql://<vm-ip>:${COORDINATOR_PORT}/tripdata` (use `POSTGRES_USER` and `POSTGRES_PASSWORD`)
+### Service Endpoints
+- **Metabase:**   `http://<host-ip>:${METABASE_PORT}`
+- **Grafana:**    `http://<host-ip>:${GRAFANA_PORT}`
+- **Prometheus:** `http://<host-ip>:${PROMETHEUS_PORT}`
+- **Postgres/Citus Coordinator:** `postgresql://<host-ip>:${COORDINATOR_PORT}/tripdata`
 
-7. **Logging tips:**
-   
-   All scripts are verbose and include timestamps. For deep debugging, check the coordinators’ container logs:
-   
-   ```bash
-   docker logs citus_coordinator
-   docker logs citus_worker1
-   docker logs pgpool
-   docker logs postgres_exporter
-   ```
+## 5. System Details
 
----
+### Data Ingestion
+The system ingests NYC Yellow Taxi trip data from public sources using a dedicated dataloader container. Data is streamed and loaded into a distributed table (`yellow_tripdata`) in Citus/PostgreSQL using high-throughput `COPY` operations. The ingestion process is automated and robust, with error handling and logging.
 
-## 6. Proposed Future Improvements
-- Add monitoring using **Prometheus + Grafana** for database and container metrics.  
-- Extend PostgreSQL cluster with **Citus** or explore **YugabyteDB/CockroachDB** for multi-writer scalability.  
-- Add **automatic backup & restore** pipelines for the database.  
-- Secure deployment with **TLS/SSL** and role-based access control.  
-- Introduce CI/CD pipeline for automated testing and deployment of updates.  
+### Database Schema & Initialization
+Initialization scripts in `db/init/` create all required users, roles, and the main analytics table. The table is distributed across Citus workers for parallel query performance. Materialized views are created for key analytics use cases:
+- Hourly average trip duration
+- Month-over-month and quarter-over-quarter tips change
+- Taxi density per square kilometer
+- Trips per day
+Privileges are set for ingestion, analytics, and monitoring users.
 
----
+### Connection Pooling & Load Balancing
+pgPool-II provides connection pooling, load balancing for read queries, and failover management. It is configured to route connections to the Citus coordinator and manage health checks.
+
+### Monitoring & Observability
+Prometheus scrapes metrics from the database and containers. Grafana provides dashboards for system health, query performance, and resource usage. The system includes ready-to-import dashboard templates.
+
+### BI & Visualization
+Metabase connects to the database via pgPool-II, enabling interactive dashboards and ad-hoc analytics. Materialized views are optimized for fast queries and visualization.
+
+### Backup & Restore
+Scripts in `scripts/` provide manual and automated backup/restore capabilities. These can be extended for cloud storage (e.g., S3) and scheduled operations.
+
+## 6. Security & Best Practices
+- All credentials and secrets are managed via `.env` (never commit `.env`)
+- Database users have least-privilege access
+- Connection pooling and health checks are enforced
+- For production, enable TLS/SSL, RBAC, and regular backups
+
+## 7. Extensibility & Customization
+- Add new materialized views for custom analytics
+- Integrate with CI/CD for automated deployments
+- Extend monitoring with custom Grafana dashboards
+- Scale out Citus workers for higher throughput
+- Integrate cloud storage for backups
+
+## 8. Troubleshooting & Support
+- Check container logs for errors: `docker compose logs -f`
+- Validate environment variables in `.env`
+- Use Grafana and Prometheus for system health
+- For database issues, connect to Citus coordinator and inspect tables/views
+
+## 9. References
+- [Citus Data Documentation](https://docs.citusdata.com/en/v13.0/)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [pgPool-II Documentation](https://www.pgpool.net/docs/latest/en/html/)
+- [Metabase Documentation](https://www.metabase.com/docs/)
+- [Prometheus Documentation](https://prometheus.io/docs/)
+- [Grafana Documentation](https://grafana.com/docs/)
