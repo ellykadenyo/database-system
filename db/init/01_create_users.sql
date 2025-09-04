@@ -1,4 +1,9 @@
--- db/init/create_users.sql
+-- Author: Elly Kadenyo
+-- Date: 2025-09-01 2025-09-04
+-- Description: SQL script to create application and special users in PostgreSQL with environment variable substitution.
+-- Usage: psql -f db/init/01_create_users.sql -d your_database_name -U your_admin_user
+-- Reference: https://www.postgresql.org/docs/current/sql-createrole.html
+-- Reference: https://www.postgresql.org/docs/current/sql-grant.html
 -- Run on coordinator during initial database init
 -- Uses environment variable substitution via envsubst in coordinator-init.sh
 

@@ -19,36 +19,50 @@ The project includes the following components:
 
 The directory structure of the project repository is as follows:
 ```
-project-repo/
-├── docker-compose.yml          # Main orchestrator (all services)
+database-system/
 ├── .env                        # Centralized environment variables & secrets
+├── .env.example                # Example environment file
+├── .gitignore                  # Git ignore file
+├── docker-compose.yml          # Main orchestrator (all services)
+├── ingest_yellow_taxi_data.py  # CSV ingestion script
 ├── README.md                   # Documentation
 │
-├── db/                         # PostgreSQL cluster & backups
+├── db/                         # PostgreSQL cluster
 │   ├── init/                   # Initialization SQL scripts
-│   │   └── create_users.sql
-│   ├── backups/                # Auto backup scripts/output
-│   └── Dockerfile              # (optional) custom Postgres image if needed
+│   │   ├── 01_create_users.sql
+│   │   └── 02_create_schema.sql
+│   └── pgpool/                 # pgPool-II configuration
+│       └── pgpool.conf
 │
 ├── monitoring/                 # Monitoring stack
 │   ├── prometheus.yml          # Prometheus scrape configs
-│   ├── grafana/
-│   │   ├── dashboards/         # JSON dashboard definitions
-│   │   └── provisioning/       # Auto-provisioning configs for Grafana
-│   └── exporters/              # e.g. postgres_exporter configs
+│   └── grafana/
+│       ├── dashboards/
+│       │   └── postgres_overview.json
+│       └── provisioning/
+│           ├── dashboards/
+│           └── datasources/
 │
 ├── analytics/                  # BI / visualization layer
+│   ├── materialized_views/
+│   │   ├── dataloader_mv_execution.sql
+│   │   ├── hourly_average_trip_duration.sql
+│   │   ├── MoM_hourly_tips_change.sql
+│   │   ├── QoQ_hourly_tips_change.sql
+│   │   ├── taxy_density_per_square_km.sql
+│   │   └── trips_per_day.sql
 │   └── metabase/
-│       └── Dockerfile          # (optional) if customization needed
+│       ├── hourly_average_trip_duration.sql
+│       ├── MoM_hourly_tips_change.sql
+│       ├── QoQ_hourly_tips_change.sql
+│       ├── taxy_density_per_square_km.sql
+│       └── trips_per_day.sql
 │
-├── security/                   # TLS/SSL, RBAC configs
-│   ├── certs/                  # Certificates for TLS
-│   └── rbac/                   # Role-based access control policies
-│
-└── scripts/                    # Utility scripts
-    ├── install-docker.sh       # Automated Docker + Compose install
-    ├── backup.sh               # Manual/cron backup script
-    └── restore.sh              # Restore from backups
+├── scripts/                    # Utility scripts
+│   ├── backup.sh               # Manual/cron backup script
+│   ├── ingest_helper.py        # Helper for ingestion
+│   ├── ingest_run.sh           # Ingestion runner
+│   └── restore.sh              # Restore from backups
 ```
 
 ---

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
+# Author: Elly Kadenyo
+# Date: 2025-09-01 2025-09-04
+# Description: Wrapper script to install dependencies and run the ingestion helper
 # ingest_run.sh - wrapper that installs dependencies, runs ingestion helper
-#Ensure it is executable # chmod +x db/ingest_run.sh
+# Ensure it is executable # chmod +x db/ingest_run.sh
 set -euo pipefail
 
 LOG() { echo "$(date -u +'%Y-%m-%dT%H:%M:%SZ') [ingest_run] $*"; }

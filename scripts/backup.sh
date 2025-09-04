@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# backup.sh - runs pg_dump inside a one-off container and uploads to S3
+# Author: Elly Kadenyo
+# Date: 2025-09-01 2025-09-04
+# Description: Script to backup PostgreSQL database to S3
+# Usage: bash scripts/backup.sh
 # Make sure it is executable # chmod +x scripts/backup.sh
 set -euo pipefail
 LOG(){ echo "$(date -u +'%Y-%m-%dT%H:%M:%SZ') [backup] $*"; }

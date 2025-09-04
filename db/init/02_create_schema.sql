@@ -1,6 +1,12 @@
--- create_schema.sql
+-- Author: Elly Kadenyo
+-- Date: 2025-09-01 2025-09-04
+-- Description: SQL script to create the tripdata schema and set appropriate privileges for application users.
+-- Usage: psql -f db/init/02_create_schema.sql -d your_database_name -U your_admin_user
+-- Reference: https://www.postgresql.org/docs/current/datatype.html
+-- Reference: https://www.postgresql.org/docs/current/sql-grant.html
 -- Creates efficient tripdata schema
--- Choose efficient datatypes: timestamps, numeric for decimals, double precision for lat/long
+-- Run on coordinator during initial database init
+-- Uses environment variable substitution via envsubst in coordinator-init.sh
 
 CREATE EXTENSION IF NOT EXISTS citus;
 

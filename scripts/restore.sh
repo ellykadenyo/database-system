@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# restore.sh - fetches latest backup from S3 and restores to the DB (destructive!)
+# Author: Elly Kadenyo
+# Date: 2025-09-01 2025-09-04
+# Description: Script to restore PostgreSQL database from S3 backup (destructive)
+# Usage: bash scripts/restore.sh
 # Make sure it is executable # chmod +x scripts/restore.sh
 set -euo pipefail
 LOG(){ echo "$(date -u +'%Y-%m-%dT%H:%M:%SZ') [restore] $*"; }

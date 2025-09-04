@@ -5,9 +5,9 @@
   "panels": [
     {
       "type": "text",
-      "title": "Postgres Overview",
+      "title": "Postgres Overview (Demo)",
       "gridPos": { "h": 2, "w": 24, "x": 0, "y": 0 },
-      "options": { "content": "Placeholder: Import a full dashboard from Grafana.com for Postgres metrics.", "mode": "markdown" }
+      "options": { "content": "Placeholder: to demo Postgres metrics grafana monitoring dashboard. This has not been developed and instead we will import ready made Grafana dashboard through our Grafana UI", "mode": "markdown" }
     }
   ],
   "schemaVersion": 30,

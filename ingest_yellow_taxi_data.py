@@ -10,6 +10,24 @@ Features:
 - Reads DB credentials securely from a .env file
 
 Author: Elly Kadenyo
+Date: 2025-09-01 to 2025-09-04
+Usage:
+    python ingest_yellow_taxi_data.py
+Requirements:
+    - Python 3.7+
+    - psycopg2
+    - requests
+    - python-dotenv
+    - A running Citus/PostgreSQL cluster with network access
+    - A .env file with DB credentials (DATALOADER_DB_HOST, DATALOADER_DB_PORT, DATALOADER_DB_NAME, DATALOADER_DB_USER, DATALOADER_DB_PASSWORD)
+Notes:
+    - Ensure the target distributed table (yellow_tripdata) exists with appropriate schema and distribution.
+    - Adjust DATA_URL to point to the actual data source if needed.
+    - This script assumes the CSV files have headers matching the table schema.
+    - For large datasets, ensure the database can handle the load and consider batching or throttling if necessary.
+
+    NB: THIS SCRIPT'S WAS RELEGATED AFTER DESIGN OF DATA LOADER DOCKER CONTAINER
+    AND IS NO LONGER IN USE. IT IS PRESERVED FOR REFERENCE PURPOSES. 
 """
 
 import os

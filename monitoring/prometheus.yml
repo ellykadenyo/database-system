@@ -1,3 +1,7 @@
+# Author: Elly Kadenyo
+# Date: 2025-09-01 2025-09-04
+# Description: Configuration file for Prometheus to auto-scrape Postgres and container metrics.
+# Reference: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
 # prometheus.yml - full auto-scrape for containers and Postgres
 global:
   scrape_interval: 15s            # scrape every 15 seconds

@@ -1,3 +1,11 @@
+# Author: Elly Kadenyo
+# Date: 2025-09-01 2025-09-04
+# Description: Docker Compose file for Citus PostgreSQL cluster with Pgpool-II, monitoring stack, Metabase, and data loader.
+# Uses environment variables from .env file for configuration.
+# Reference: https://docs.docker.com/compose/compose-file/
+# Reference: https://docs.citusdata.com/en/v13.0/installation/docker/
+# Reference: https://www.pgpool.net/docs/latest/en/html/usage.html
+# Usage: docker compose up -d
 services:
   citus_coordinator:
     env_file:
@@ -314,6 +322,8 @@ services:
         condition: service_healthy
       citus_coordinator_init:
         condition: service_completed_successfully
+    volumes:
+    - ./analytics/materialized_views/dataloader_mv_execution.sql:/docker-entrypoint-initdb.d/materialized_views.sql:ro
     entrypoint: >
       bash -c "
       set -e
@@ -334,6 +344,11 @@ services:
       done;
 
       echo 'Data load complete.';
+      
+      echo 'Creating materialized views...';
+      psql -h citus_coordinator -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f /docker-entrypoint-initdb.d/materialized_views.sql
+
+      echo 'Materialized views created successfully.';
       "
     environment:
       PGPASSWORD: "${POSTGRES_PASSWORD}"

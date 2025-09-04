@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-#Ensure it is executable # chmod +x scripts/ingest_helper.py
+# Author: Elly Kadenyo
+# Date: 2025-09-01 2025-09-04
+# Description: Simple CSV ingestion helper that loads CSVs from /data into the yellow_tripdata table using COPY.
+# Usage: python scripts/ingest_helper.py
+# Ensure it is executable # chmod +x scripts/ingest_helper.py
 """
 ingest_helper.py
 Simple CSV ingestion helper that loads CSVs from /data into the yellow_tripdata table using COPY.
