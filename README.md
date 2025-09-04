@@ -167,10 +167,36 @@ Privileges are set for ingestion, analytics, and monitoring users.
 pgPool-II provides connection pooling, load balancing for read queries, and failover management. It is configured to route connections to the Citus coordinator and manage health checks.
 
 ### Monitoring & Observability
+
 Prometheus scrapes metrics from the database and containers. Grafana provides dashboards for system health, query performance, and resource usage. The system includes ready-to-import dashboard templates.
 
+#### Grafana Dashboard Screenshots
+
+Below are sample screenshots from the Grafana dashboards:
+
+![Grafana Screenshot 1](monitoring/grafana/dashboards/screenshots/grafana_screenshot_1.png)
+![Grafana Screenshot 2](monitoring/grafana/dashboards/screenshots/grafana_screenshot_2.png)
+![Grafana Screenshot 3](monitoring/grafana/dashboards/screenshots/grafana_screenshot_3.png)
+![Grafana Screenshot 4](monitoring/grafana/dashboards/screenshots/grafana_screenshot_4.png)
+![Grafana Screenshot 5](monitoring/grafana/dashboards/screenshots/grafana_screenshot_5.png)
+![Grafana Screenshot 6](monitoring/grafana/dashboards/screenshots/grafana_screenshot_6.png)
+![Grafana Screenshot 7](monitoring/grafana/dashboards/screenshots/grafana_screenshot_7.png)
+
 ### BI & Visualization
+
 Metabase connects to the database via pgPool-II, enabling interactive dashboards and ad-hoc analytics. Materialized views are optimized for fast queries and visualization.
+
+#### Metabase Dashboard Screenshots
+
+Below are sample screenshots from the Metabase dashboards:
+
+![Hourly Average Trip Duration](analytics/metabase/screenshots/metabase_hourly_average_trip_duration.png)
+![Month-over-Month Hourly Tips Change 1](analytics/metabase/screenshots/metabase_MoM_hourly_tips_change_1.png)
+![Month-over-Month Hourly Tips Change 2](analytics/metabase/screenshots/metabase_MoM_hourly_tips_change_2.png)
+![Quarter-over-Quarter Hourly Tips Change 1](analytics/metabase/screenshots/metabase_QoQ_hourly_tips_change_1.png)
+![Quarter-over-Quarter Hourly Tips Change 2](analytics/metabase/screenshots/metabase_QoQ_hourly_tips_change_2.png)
+![Taxi Density per Square Km](analytics/metabase/screenshots/metabase_taxy_density.png)
+![Trips Per Day](analytics/metabase/screenshots/metabase_trips_per_day.png)
 
 ### Backup & Restore
 Scripts in `scripts/` provide manual and automated backup/restore capabilities. These can be extended for cloud storage (e.g., S3) and scheduled operations.
