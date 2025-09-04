@@ -119,7 +119,7 @@ Copy `.env.example` to `.env` and fill in all required values for ports, databas
 
 ## 4. Deployment & Usage
 
-### Quick Start
+### i. Quick Start
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/ellykadenyo/database-system.git
@@ -143,7 +143,7 @@ Copy `.env.example` to `.env` and fill in all required values for ports, databas
    docker compose down
    ```
 
-### Service Endpoints
+-### ii. Service Endpoints
 - **Metabase:**   `http://<host-ip>:${METABASE_PORT}`
 - **Grafana:**    `http://<host-ip>:${GRAFANA_PORT}`
 - **Prometheus:** `http://<host-ip>:${PROMETHEUS_PORT}`
@@ -151,10 +151,10 @@ Copy `.env.example` to `.env` and fill in all required values for ports, databas
 
 ## 5. System Details
 
-### Data Ingestion
+### i. Data Ingestion
 The system ingests NYC Yellow Taxi trip data from public sources using a dedicated dataloader container. Data is streamed and loaded into a distributed table (`yellow_tripdata`) in Citus/PostgreSQL using high-throughput `COPY` operations. The ingestion process is automated and robust, with error handling and logging.
 
-### Database Schema & Initialization
+### ii. Database Schema & Initialization
 Initialization scripts in `db/init/` create all required users, roles, and the main analytics table. The table is distributed across Citus workers for parallel query performance. Materialized views are created for key analytics use cases:
 - Hourly average trip duration
 - Month-over-month and quarter-over-quarter tips change
@@ -163,10 +163,10 @@ Initialization scripts in `db/init/` create all required users, roles, and the m
 
 Privileges are set for ingestion, analytics, and monitoring users.
 
-### Connection Pooling & Load Balancing
+### iii. Connection Pooling & Load Balancing
 pgPool-II provides connection pooling, load balancing for read queries, and failover management. It is configured to route connections to the Citus coordinator and manage health checks.
 
-### Monitoring & Observability
+### iv. Monitoring & Observability
 
 Prometheus scrapes metrics from the database and containers. Grafana provides dashboards for system health, query performance, and resource usage. The system includes ready-to-import dashboard templates.
 
@@ -182,7 +182,7 @@ Below are sample screenshots from the Grafana dashboards:
 ![Grafana Screenshot 6](monitoring/grafana/dashboards/screenshots/grafana_screenshot_6.png)
 ![Grafana Screenshot 7](monitoring/grafana/dashboards/screenshots/grafana_screenshot_7.png)
 
-### BI & Visualization
+### v. BI & Visualization
 
 Metabase connects to the database via pgPool-II, enabling interactive dashboards and ad-hoc analytics. Materialized views are optimized for fast queries and visualization.
 
@@ -198,7 +198,7 @@ Below are sample screenshots from the Metabase dashboards:
 ![Taxi Density per Square Km](analytics/metabase/screenshots/metabase_taxy_density.png)
 ![Trips Per Day](analytics/metabase/screenshots/metabase_trips_per_day.png)
 
-### Backup & Restore
+### vi. Backup & Restore
 Scripts in `scripts/` provide manual and automated backup/restore capabilities. These can be extended for cloud storage (e.g., S3) and scheduled operations.
 
 ## 6. Security & Best Practices
@@ -207,10 +207,9 @@ Scripts in `scripts/` provide manual and automated backup/restore capabilities. 
 - Connection pooling and health checks are enforced
 
 ## 7. Scalability & Customization for Production Deployment
-
 Achieving ultra-high throughput (over 1 million inserts per second) and robust, production-grade analytics requires architectural, operational, and security enhancements. Below is a roadmap and best practices for scaling this platform:
 
-### 1. High-Throughput Real-Time Ingestion & Streaming Integration
+### i. High-Throughput Real-Time Ingestion & Streaming Integration
 - **Streaming Source Integration:** Use Apache Kafka (or Pulsar) as the central streaming platform for ingesting real-time data. Kafka topics can buffer and distribute events to multiple consumers for parallel processing.
 - **Kafka Connectors & Microservices:** Deploy ingestion microservices or Kafka Connect connectors that consume from Kafka and write to the database using batch COPY or streaming inserts. This decouples producers from consumers and enables scalable, fault-tolerant ingestion.
 - **Batch & Streaming:** Combine batch COPY for bulk loads with streaming inserts for real-time data. Use partitioned tables and write-optimized schemas.
@@ -220,28 +219,28 @@ Achieving ultra-high throughput (over 1 million inserts per second) and robust, 
 - **Citus Sharding:** Scale out Citus workers horizontally. Each worker handles a shard, enabling parallel inserts and queries.
 - **Bulk Insert APIs:** Use COPY, UNLOGGED tables, and deferred constraints for fastest ingestion. For streaming, use async drivers and batching.
 
-### 2. OLTP vs OLAP Workload Separation
+### ii. OLTP vs OLAP Workload Separation
 - **OLTP (Online Transaction Processing):** Handle transactional workloads (e.g., inserts, updates, deletes, point lookups) on dedicated Citus/Postgres clusters optimized for write throughput and low latency. Use connection pooling, partitioning, and sharding for scale.
 - **OLAP (Online Analytical Processing):** Offload analytical queries (aggregations, reporting, dashboarding) to separate clusters or replicas. Use read replicas, columnar extensions (e.g., Citus columnar, ClickHouse), or federated query engines. Analytical workloads can be isolated from transactional workloads to prevent resource contention.
 - **Data Sync:** Use logical replication, Change Data Capture (CDC), or ETL pipelines to keep OLAP clusters in sync with OLTP sources. Kafka can serve as the backbone for CDC and event-driven data movement.
 - **Query Routing:** Use BI tools and analytics platforms to route heavy queries to OLAP endpoints, while apps use OLTP endpoints for transactional access.
 
-### 3. Flexible Data Access & Filtering
+### iii. Flexible Data Access & Filtering
 - **Indexing:** Create indexes on frequently filtered columns (e.g., time, location, user/app fields).
 - **Materialized Views:** Precompute aggregates and filtered views for fast access.
 - **Role-Based Access Control (RBAC):** Use Postgres roles and row-level security to restrict data access by user/app.
 
-### 4. Long-Term Data Retention & Archival
+### iv. Long-Term Data Retention & Archival
 - **Partition Pruning:** Use time-based partitions for efficient retention and archiving.
 - **Cold Storage:** Move older partitions to cloud object storage (S3, GCS) or data lake solutions. Use foreign data wrappers for query federation.
 - **Automated Archival:** Schedule jobs to archive and purge data based on retention policies.
 
-### 5. Aggregated Statistics & Analytics
+### v. Aggregated Statistics & Analytics
 - **Materialized Views:** Create and refresh views for aggregates (e.g., hourly, daily, monthly stats).
 - **OLAP Extensions:** Integrate with columnar stores (e.g., ClickHouse, Apache Druid) for advanced analytics if needed.
 - **BI Tools:** Connect Metabase, Grafana, or enterprise BI platforms for interactive analytics.
 
-### 6. Production-Ready Architecture (OLTP/OLAP Separation & Streaming)
+### vi. Production-Ready Architecture (OLTP/OLAP Separation & Streaming)
 
 ```mermaid
 graph TD
@@ -269,7 +268,7 @@ graph TD
    T -->|Heavy Queries| V[OLAP Extensions]
 ```
 
-### 7. Security, HA, and Disaster Recovery
+### vii. Security, HA, and Disaster Recovery
 - **Encryption:** Enable TLS for all connections (Postgres, pgPool-II, BI tools). Encrypt data at rest using disk or cloud encryption.
 - **Secret Management:** Store credentials in a secrets manager (Vault, AWS Secrets Manager, Azure Key Vault).
 - **High Availability:** Deploy Citus coordinator and workers in HA mode (multiple replicas, failover). Use load balancers (HAProxy, cloud LB) for traffic routing.
@@ -278,27 +277,27 @@ graph TD
 - **Centralized Logging:** Aggregate logs from all containers/services to ELK, Loki, or cloud logging platforms. Enable alerting for errors and anomalies.
 - **Monitoring & Alerting:** Use Prometheus and Grafana for metrics, with alerting rules for failures, slow queries, and resource exhaustion.
 
-### 8. Performance Tuning
+### viii. Performance Tuning
 - **Partitioning:** Use native Postgres partitioning for large tables. Prune partitions for queries and retention.
 - **Sharding:** Increase number of Citus shards and workers for parallelism.
 - **Connection Pools:** Tune pgPool-II and application pools for concurrency.
 - **Resource Sizing:** Allocate sufficient CPU, RAM, and fast storage (NVMe, SSD) for ingestion and query workloads.
 - **Query Optimization:** Analyze and tune queries, create appropriate indexes, and use EXPLAIN plans.
 
-### 9. Automation & DevOps
+### ix. Automation & DevOps
 - **CI/CD:** Automate deployments, schema migrations, and configuration changes.
 - **Infrastructure as Code:** Use Terraform, Ansible, or cloud-native tools for reproducible infrastructure.
 - **Health Checks:** Automate service health checks and self-healing.
 
-### 10. Path to Full-Scale Solution
-1. **Start with the provided Docker Compose stack for prototyping.**
-2. **Move to Kubernetes or cloud-native orchestration for scaling.**
-3. **Integrate streaming ingestion and batch loaders using Kafka.**
-4. **Separate OLTP and OLAP workloads with dedicated clusters and replication.**
-5. **Scale out Citus workers and shards.**
-6. **Implement HA, DR, and security best practices.**
-7. **Automate monitoring, alerting, and backups.**
-8. **Continuously tune performance and cost.**
+### x. Path to Full-Scale Solution
+- **Start with the provided Docker Compose stack for prototyping.**
+- **Move to Kubernetes or cloud-native orchestration for scaling.**
+- **Integrate streaming ingestion and batch loaders using Kafka.**
+- **Separate OLTP and OLAP workloads with dedicated clusters and replication.**
+- **Scale out Citus workers and shards.**
+- **Implement HA, DR, and security best practices.**
+- **Automate monitoring, alerting, and backups.**
+- **Continuously tune performance and cost.**
 
 ## 8. Troubleshooting & Support
 - Check container logs for errors: `docker compose logs -f`
@@ -317,8 +316,8 @@ graph TD
 
 ## 10. Exercise Reflection
 
-### 1. Most Interesting
+### i. Most Interesting
 The scope of this exercise (Kind of full stack data engineering) was challening and interesting because I was able to apply quite a range of my data engineering skills from data platform architecting, deployment automation, containerization, SQL, dashboarding, monitoring etc.
 
-### 2. Most Cumbersome
+### ii. Most Cumbersome
 Won't term it cumbersome but testing the Materialized Views took a bit of time because each time I had to REFRESH them by reloading them with data afresh and considering the small capability of the AWS EC2 server I was using it took bit of time.
